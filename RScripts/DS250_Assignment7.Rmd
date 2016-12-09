@@ -1,0 +1,205 @@
+---
+title: "DS250 - Introduction to Data Science"
+author: "Student Name"
+date: "November 15, 2015"
+output: html_document
+---
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+```
+```{r}
+rm( list = ls())
+```
+
+# Assignment 7 - Data Visualization
+This assignment covers principles of data visualization, concepts of perception, and creating visualizations using R.
+
+### The objectives of this assignment are:
+* Review and analysis of visualizations
+* Visual perception exercises
+* Visualization evaluation
+* Creating plots using R
+
+***
+#### Question 1 - Visual Analysis
+**Briefly describe some of the core components of visual analysis:**
+
+a) Discovery: one of the key aspects of visualization is the ability to discover new things about the data. Visualization, because it makes use of our visual sense, can help us *see* things that we would otherwise not notice in the data. Our eyes are attuned to capture patterns, see correlations, and understand 
+
+b) Communication: visual analysis allows us to communicate key features about data and information quickly and effectively. We can easily see what is bigger, where the trend is, how data changes over time -- and these messages are communicated without having to parse through large amounts of numbers or calculations. 
+
+c) Decisions: once we've discovered insight from the data and communicated it, we can then use visual analysis to make decisions. The information in the visual can help us decide how to proceed, what option is optimal. 
+
+***
+#### Question 2 - Visual Analysis
+**What is the 'color wheel' and how is it used?**
+
+The color wheel is an arrangement of the standard hues in a circular form that places complementary colors across from each other. It allows you to assess which colors are good contrasting combinations. For example, red and green are on opposite sides of the color wheel (complementary), so they pair well. 
+
+***
+#### Question 3 - Customizing Plots in R
+**Using R, create a Dendrogram plot that matches the following with the sample data**
+
+```{r, echo=TRUE}
+data = data.frame(USArrests[,1:3])
+dt = dist(data, method = "euclidean")
+clust = hclust(dt)
+# very simple dendrogram
+plot(clust, main="US Arrests by State", xlab="State", ylab="Cluster Height")
+```
+
+a) Modify the title: "US Arrests by State"  
+*See above*
+
+b) Modify the x and y axis labels <br>
+*See above*
+
+***
+#### Question 4 - Visual Evaluation
+Examine the infographic:
+http://www.informationisbeautifulawards.com/showcase/611-the-graphic-continuum  
+
+Provide feedback on the following: 
+
+a) Organization <br>
+Breaks visual displays into six different categories, based on how the data is presented (distribution, time, category comparison, geospatial, part-to-whole, and relationship). These categories are useful ways of segregating visuals into interesting groups. 
+
+b) Typography  <br>
+There are textual notes for each of the groups, along with a block of text in the upper left that details the overarching theme of the visual. The arrays of graphs are arranged in rows and are connected by features that are similar between the two groups. 
+
+c) What 'story' does it tell? <br>
+It shows how graphics are organized and linked. 
+
+d) Any suggestions or feedback on improvements? <br>
+The font is too small; might be more interesting as an interactive visual. 
+
+
+***
+#### Question 5 - Visual Evaluation
+Examine the following infographic:
+http://www.informationisbeautifulawards.com/showcase/490-world-cup-2014-wall-chart
+
+Provide feedback on the following:
+
+a) Organization <br>
+The centerpiece of the visual is a circular arrangement of the various teams playing in the 2014 World Cup. Each inner layer contains spaces to fill in the winners of each round, all the way down to the final game.
+
+b) Typography <br>
+The radial piece is the focus, but there is also information at the bottom about game locations and trivia.  
+
+c) What 'story' does it tell? <br>
+It tells the story of the world cup matches, how each team is funneled through various rounds until they reach the final one. 
+
+d) Any suggestions or thoughts on improvements? <br>
+Small font; if possible, could make it larger without losing much. Overall a really neat design. 
+
+
+***
+#### Question 6 - Histograms and Density Plots
+**Review and update the following R code to produce the following using qplots:**
+
+a) Histogram  
+b) Density plot  
+
+```{r, echo=TRUE}
+library(ggplot2)  
+## Histogram
+qplot(Petal.Length, data=iris, geom="histogram", binwidth = 1/10, color = Species) + xlab("Petal Length")
+
+## Density plot 
+qplot(Petal.Length, data=iris, geom="density")  ## Density plot  
+```
+
+***
+#### Question 7 - Create Bar Chart
+**From the dataset below, create a bar chart using barplot:**
+
+```{r, echo=TRUE}
+ds <- c(2,3,3,3,4,5,5,5,5,6)
+counts <- table(ds)
+barplot(counts, col="dark red", main = "Bar Chart", ylab="Counts", xlab = "Values")
+lines(density(counts), col="blue", lwd=2)
+lines(density(counts, adjust=2), lty="dotted", col="darkgreen", lwd=2)
+```
+
+a) Add a title and x and y axis labels  
+b) Change the color of the bar plot bars  
+c) Use the 'density' method to alter the bar plot bars<br>
+*See above*
+
+***
+#### Question 8 - Visualizations in R
+**From the dataset below, create a line chart showing (CO2 emissions per capita) by (year):**
+
+```{r, echo=FALSE}
+year <- c("1961","1962","1963","1964","1965","1966","1967","1968","1969","1970","1971","1972","1973","1974","1975","1976","1977","1978","1979","1980","1981","1982","1983","1984","1985","1986","1987","1988","1989","1990","1991","1992","1993","1994","1995","1996","1997","1998","1999","2000","2001","2002","2003","2004","2005","2006","2007","2008","2009","2010")
+
+co2_emission_per_cap_qt <- as.numeric(c("0.836046900792028","0.661428164381093","0.640001899360285","0.625646053941047","0.665524211218076","0.710891381561055","0.574162146975018","0.60545199674633","0.725149509123457","0.942934534989582","1.04223969658961","1.08067663654397","1.09819569131687","1.09736711056811","1.25012409495905","1.28528313553995","1.38884289658754","1.52920110964112","1.5426750986837","1.49525074931082","1.46043181655825","1.56673968353113","1.62905590778943","1.75044806018373","1.87105479144466","1.93943425697654","2.03841068876927","2.1509052249848","2.15307791087471","2.16770307659104","2.24590127565651","2.31420729031649","2.44280065934625","2.56599389177193","2.75575496636525","2.84430958153669","2.82056789057578","2.67674598026467","2.64864924664833","2.69686243322549","2.74212081298895","2.88522504139331","3.51224542766222","4.08013890554173","4.4411506949345","4.89272709798477","5.15356401658718","5.31115185538876","5.77814318390097","6.19485757472686"))
+````
+
+````{r, echo=TRUE}
+df.china_co2 <- data.frame(year,co2_emission_per_cap_qt)
+# head(df.china_co2,5)
+
+df.china_co2$levels = cut(df.china_co2$co2_emission_per_cap_qt, breaks=c(0, 2, 4, 6), labels=c("Low", "Medium", "High"))
+
+plot(df.china_co2$year, df.china_co2$co2_emission_per_cap_qt, xlab="Year", ylab="CO2 Emission", color="levels")
+
+ggplot(data=df.china_co2, aes(x=year, y=co2_emission_per_cap_qt)) +
+    geom_line() +
+    geom_point(aes(color=levels)) +
+    ylab("CO2 Emissions") +
+    scale_x_discrete(breaks=5)
+````
+
+***
+#### Question 9 - Scatter Plots
+**Review and modify the following scatter plot:**
+
+a) display the (supp) values (OJ,VC) points with different colors  
+
+````{r, echo=TRUE}
+require(ggplot2)
+qplot(dose, len, data=ToothGrowth, geom="point", color=supp)
+````
+
+b) separate the (supp) values (OJ,VC) into separate plots on the same chart 
+
+````{r, echo=TRUE}
+require(ggplot2)
+library(gridExtra)
+dataOJ = ToothGrowth[ToothGrowth$supp=="OJ",]
+dataVC = ToothGrowth[ToothGrowth$supp=="VC",]
+
+p1 = qplot(dose, len, data=dataOJ, geom="point")
+p2 = qplot(dose, len, data=dataVC, geom="point")
+grid.arrange(p1, p2, ncol = 2)
+````
+
+c) add a trend line using (geom=c("point","smooth"))  
+
+````{r, echo=TRUE}
+qplot(dose, len, data=ToothGrowth, geom=c("point", "smooth"), color=supp)
+````
+
+***
+#### Question 10 - Bubble Plots
+Using the data set below, create a bubble plot showing x and y and variable sizes
+
+````{r, echo=TRUE}
+set.seed(57)        
+
+x_var <- rnorm( n = 15, mean = 5, sd = 2)
+y_var <- x_var + rnorm(n = 15, mean = 5, sd =4)
+size_var <- runif(15, 1,10)
+
+df.test_data <- data.frame(x_var, y_var, size_var)
+head(df.test_data,5)
+
+ggplot(df.test_data, aes(x = x_var, y = y_var)) +
+    geom_jitter(aes(size = size_var, alpha=.02, color=size_var)) + 
+    scale_size(range = c(1,15)) +
+    theme_bw() + xlab("X Value") + ylab("Y Value")
+````
+
+#### **END**

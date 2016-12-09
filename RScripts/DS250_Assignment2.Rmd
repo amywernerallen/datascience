@@ -1,0 +1,234 @@
+---
+title: "DS250 - Introduction to Data Science"
+author: "Amy Werner-Allen"
+date: "October 18, 2016"
+output: html_document
+---
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+```
+```{r}
+rm( list = ls())  # Clear environment
+```
+
+## Assignment 2
+This assignment covers experiment study design, hypothesis development, common bias and error issues as well as simple predictive analytics using regression analysis and decision tries and a high level introduction to conditional probability using Bayes theorem.
+
+#### The objectives of this assignment are:
+* Understand experiment types and design
+* Understand common errors and bias factors
+* Simple predictive analytics
+* Using R to create linear regression models
+
+***
+#### Question 1 - Experiment Design
+a) Briefly describe some common issues in experiment design:
+
+There are many issues that can crop up in experiment design, depending on the type of experiment. One basic issue is simply not having enough data points. There must be sufficient sample size in order to have meaningful, statistically signficant results. Another issue might be not having a **double blind** study, where both the subjects and experiments are unaware of the controls and variables. Other common problems include not defining a clear **hypothesis**, not creating a **control group**, and not factoring in and accounting for **biases**. 
+
+b)  In a new drug study using 40 mice (20m / 20f) where half would be treated and the other half are untreated. Also the procedure is complex and is limited to 4 mice per day. What would be the most efficient approach to assign the mice by group and day? 
+
+The best way to approach this study would be to have the four mice per day split as follows: 1 untreated female, 1 treated female, 1 untreated male, and 1 treated male. That way we are controlling for both gender and treatment (i.e. treatment is split each day). This then takes into account the fact that the complex treatment may go differently on different days, based on who is delivering the procedure. 
+
+c) Briefly describe some of the differences between experiment vs. observational studies.
+
+In an **experimental study**, various treatments are applied to experimental subjects (either people or things). The outcome of the treatment is observed. An **observational study** is more passive: the subjects do no receive a treatment, but are naturally segmented into various groups (e.g. people who are smokers versus non-smokers), and an observation is made on each of the groups (e.g. lung capacity).
+
+d) Create a simple experiment design for the following:
+
+**Study: Plants grow more when exposed to classical music**
+
+Review and complete the following questions:   
+1. How would you design a study of this?  
+2. How will you select the significant factors?  
+3. How many samples/subjects will you need?  
+4. Briefly describe your experiment approach:  
+
+I would design this study by creating two groups of plants, one group that is exposed to classical music and one that is not, and measure the growth rates of the two groups.
+
+If resources and time permit, I would run this experiment several times on various types of plants, to ensure consistency among differnet species. Ideally, I would choose plants that have non-negligable growth rates over a short amount of time (i.e. I wouldn't choose slow-growing trees that would take years to measure small amounts of growth). 
+
+I would control for factors like nutrients (water, soil type, fertilizer, light exposure) and type of music (soft and lyrical or loud and symphonic), and ensure that these features are consistent across both groups. I would aim to have as many samples as possible; since we are dealing with plants and not people, this makes the experiment slightly easier. I would have as many samples as possible, given financial and space constraints. 
+
+Experimental approach: obtain a large selection of the same type of plant. Divide the sample into two groups; one will be the control, the other the variable. For each group,label the plants and take an initial measurement. For the variable group, play classical music during the morning and evening for one hour. Water and fertilize the plants equally; both groups should be exposed to the same amount of sunlight and be planted in the same type of soil. Take measurements of all plants again after one week. Plot the delta growth change of both groups and determine whether the change is higher in the group of plants exposed to music. Repeat the experiment with a new species of plant. 
+
+
+***
+
+#### Question 2 - Experimental Error
+**Briefly describe Type 1 experimental errors and provide two (2) examples.**
+
+Type 1 experiemental error is also known as a **false positive**: this occurs when the null hypothesis was rejected when it was in fact true. 
+
+Let's say an experiment is designed to detect whether symptoms improve more rapidly when taking drug A versus a placebo. Type 1 experimental error would be if the conclusion is that the drug is significantly more effective in treating the symptoms than the placebo, when this is not in fact the case. 
+
+Another example would be the hypothesis that drinking two cups of coffee a day reduces the risk of cardiovascular disease. Type 1 experimental error would be if the conclusion is that drinking two cups of coffee daily does reduce the risk of heart disease, when in fact it does not. 
+
+**Briefly describe a Type 2 error and provide two (2) examples:**
+
+Type 2 experimental error is also known as a **false negative**: this occurs when the null hypothesis was retained when it was in fact false. 
+
+Using the same example experiments as above: in the first scenario, type 2 experimental error would be if the drug is shown to be just as effective as the placebo, when in fact it is significantly more effective than the placebo. 
+
+In the second scenario, type 2 experimental error would be if drinking twice-daily coffee is shown to have no impact on being diagnosed with cardiovascular disease, when in fact it does. 
+
+**Choose and describe three (3) examples of experimental bias:**
+
+The **Dunning-Kruger** effect is a bias that describes how high-ability people over-estimate the facility of a particular task, and equivalently, low-ability people over-estimate the difficulty of a particular task. For example: a pro-tennis player may consider a specific tennis maneuver to be "easy", because it was a move they learned early on and have mastered over many years; in reality, this move would be challenging for an average tennis player. 
+
+**Loss aversion** is the tendency of people to avoid losing something even with an equivalent gain. So for example, one would rather not lose $10 rather than find $10. 
+
+Lastly, the **Ostrich effect** is when people avoid hearing or considering negative financial information. People are more likely to avoid thinking about risky financial situations and are more prone to pretend that they don't exist. 
+
+***
+#### Question 3 - Hypothesis Definition
+Review the following study description:
+
+A renown doctor claims that 17 year olds have an average body temperature higher than the average (98.6 f). After conducting a random statistical sample of 25 17 year olds, the average temperature is found to be (98.9 f) with a standard deviation of 0.6 degrees f.
+
+**Identify the hypothesis in this study:**
+
+17-year-olds have an average body temperature higher than non-17-year-olds. 
+
+**Define the null hypothesis (H0) for this study:**
+
+The average body temperature of 17-year-olds is the same as non-17-year-olds.
+
+**Identify any alternate hypothesis (Ha) applicable for this study:**
+
+The average body temperature of 17-year-olds is higher than adults over the age of 18. 
+
+***
+#### Question 4 - Causation
+For each of the following statements, assign a value from the list below:  
+  a. There are confounding variables  
+  b. It is unclear which variable is the cause and which is the effect  
+  c. It is unreasonable to generalize from the sample studied  
+  d. The variables actually measured are not related to the effect  
+  e. No plausible alternative explanation exists  
+
+
+1) A County inspector found that 35% of the sprinklers failed to activate under 7 pounds of pressure. However, the manufacturer maintains that the 7 psi threshold for passing or failing does not reflect typical water pressure in sprinkler systems.
+
+C - It is unreasonable to generalize since the the outcome was measured under a context that was not appropriate for that particular situation (e.g. more pressure than is designed for this system). So even though 35% of the sprinklers failed to activate, this should not be generalized to **all** sprinklers, since this water pressure is atypical. 
+
+2) Samoans have an increasing preference for violence as measured by the steadily increasing number of television sets being sold.
+
+B - It is unclear which variable is the cause and which is the effect: it is also possible that the sale of televisions is not related to the increasing violence (another factor may be the primary cause). While watching more violent television shows may cause an increase in violence, more violence may also be a symptom of some other factor, like increased drug trafficking, which may be pulling in more money and leading to economic availability of televisions. 
+
+
+3) A new study suggests that women do not have the ability to be orchestra conductors since only a small percentage of orchestra conductors are women.
+
+A - There are probably confounding variables in this situation. For example, perhaps women are less likely to pursue being a conductor if there are fewer female role models. Or perhaps the educational opportunities for women are fewer or resources are more often allocated to men, due to the prevalence of men in the field. 
+
+***
+#### Question 5 - Regression
+**Briefly describe the difference between linear and logistic regression:** <br><br>
+In **linear regression**, the outcome (dependent variable) must be continuous, meaning the predicted outcome can take on any value. In **logistic regression**, the outcome (dependent variable) is only a selection of values. For example, if we want to predict a binary outcome (yes or no, 1 or 0), this would be logistic regression. 
+
+
+**Review and run the following to create linear regression model:**
+```{r eval=TRUE}
+#install.packages("gamlss.data")
+library(gamlss.data)
+data("usair")
+print(head(usair))
+```
+_A sample of the US Air data._ <br>
+_**y** is sulpher dioxide concentration in air mgs. per cubic metre in 41 cities in the USA._ <br>
+_**x3** is population size in thousands._
+
+```{r eval = TRUE}
+model.0 <- lm(y ~ x3, data = usair)
+summary(model.0)
+```
+_Output from the model:_
+_Here we are doing a linear model using x3 to predict y. We can see the R squared and adjusted R squared value are both very low (indicating that the linear model explains very little of the variability of the data)._ <br><br>
+
+**From the prior data set, review and run the following code to create predicted values for the model**
+
+```{r eval=TRUE}
+usair$prediction <- predict(model.0)
+usair$residual   <- resid(model.0)
+print(usair$prediction)
+print(usair$residual)
+```
+_Here the **prediction vecto**r gives us predicted **y** values based on the model we detailed in the previous section. The **residual vector** shows the difference between the actual values and the predicted ones._ <br><br>
+
+**Modify the following plot to show the regression line from the pollution (y) over the population (x3). Add the residuals to show the difference between actual vs. predicted values.**
+
+```{r eval=TRUE}
+actuals = data.frame(matrix(c(usair$x3, usair$y), ncol = 2, nrow =41))
+predict = data.frame(matrix(c(usair$x3, usair$prediction), ncol = 2, nrow=41))
+resid = data.frame(matrix(c(usair$x3, usair$residual), ncol = 2, nrow = 41))
+
+library(ggplot2)
+
+ggplot() + 
+geom_point(data = actuals, aes(x=X1, y=X2), color='blue') + 
+geom_point(data = predict, aes(x=X1, y=X2), color='red') +
+geom_line(data = predict, aes(x=X1, y=X2), color = 'red') +
+ggtitle("Linear Model for US Airway Data") +
+xlab("Population") +
+ylab("Pollution")
+
+ggplot() +
+geom_point(data = resid, aes(x=X1, y=X2), color = 'dark green') + geom_hline(yintercept = 0) +
+ggtitle("Residuals for US Airway Model") +
+xlab("Population") +
+ylab("Pollution")
+
+```
+
+***
+#### Question 6 - Logistic Regression
+**Using plot, review the following general linear model(glm):**
+```{r eval=TRUE}
+cuse <- read.table("http://data.princeton.edu/wws509/datasets/cuse.dat", header=TRUE)
+attach(cuse)
+head(cuse)
+```
+_This data contains data points for contraceptive use with age, education, and desire for more children as different features._  <br><br>
+
+
+```{r eval=TRUE}
+lrfit <- glm(cbind(using, notUsing) ~  age + education + wantsMore,family = binomial)
+print(lrfit)
+```
+_Here we are using a general linear model to  predict the use of contraception using age, education, and desire to have more children. We can see from the output that the features that are most strongly correlated to contraception use is age 25-29, age 30-39, age 40-49, low education, and the desire to have more children._
+
+***
+#### Question 7 - Decision Trees
+**Review and run the following code:**
+
+```{r eval = TRUE}
+head(iris)
+```
+_The following is a snippet of the **iris data**: it shows the length and the width of the sepal and petal, along with the species (three types: setosa, versicolor, virginica)._  <br><br>
+
+```{r eval=TRUE}
+#install.packages("party")  # Install package if needed
+library(party)
+iris_ctree <- ctree(Species ~ Sepal.Length + Sepal.Width + Petal.Length + Petal.Width, data=iris)
+print(iris_ctree)
+```
+_Here we are creating a decision tree to determine the features that can be used to predict the species of the iris flower. There are three different decision points. The first is whether the petal length is greater or less than 1.9. The next is whether the petal width is greater or less than 1.7. And finally, the last point is whether the petal length is greater or less than 4.8. These decision points lead to four different **nodes**, detailed more in the next part._ <br><br>
+
+
+**Using plot(), create a plot of the decision tree.**
+```{r eval=TRUE}
+plot(iris_ctree)
+```
+
+_Here it is easier to see the various decision points and nodes. For example, we can see that, if the petal length is less than or equal to 1.9, the all of the flowers (from this sample) fall into the setosa species bucket. For those with petal length greater than 1.9, an additional feature must be assessed: petal width. If the petal width is greater than 1.7, then the highest likelihood is that the species is virginica. Lastly, if the petal width is less than or equal to 1.7, we can reassess petal length to see if it is greater than 4.8. If it is less than or equal to 4.8, then the highest likelihood is that the species is versicolor._
+
+***
+#### Question 8 (Optional) - Understanding Probability
+```
+In an act of mercy, the Emperor offers a prisoner a trial to pick one pebble from two (2) bowls. There are fifty (50) white pebbles and fifty (50) black pebbles. The prisoner is blindfolded and must choose only one (1) pebble. If the prisoner chooses a white pebble he will be freed, but if he chooses a black pebble he will be executed. 
+```
+Describe how the pebbles should be distributed to ensure the highest chance of survival.
+
+***
+
+#### **End**
