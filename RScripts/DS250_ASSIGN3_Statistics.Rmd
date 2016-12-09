@@ -1,0 +1,279 @@
+---
+title: "DS250 - Introduction to Data Science"
+author: "Student Name"
+date: "October 20, 2015"
+output:  html_document
+---
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+```
+```{r}
+rm( list = ls())  # Clear environment
+```
+
+# Assignment 3 - Getting Started with Statistics
+
+This assignment covers core concepts in data and descriptive and inferential statistics. Statistical analysis is one of the primary tools of a Data Scientist used in understanding data, testing validity, and making predictions.
+
+### The objectives of this assignment:
+* Understand the types of data
+* Review core concepts in descriptive statistics
+* High level review of probability distributions
+* Practice making predictions using regression and probability
+
+***
+#### Question 1 - Types of Data
+**a**\. Describe some of the differences between qualitative and quantitative data:
+
+````
+
+````
+
+**b**\. Describe some of the differences between an interval and a ratio:
+
+````
+
+````
+
+**c**\. From the image below, identify the statistical data types in the departure table:
+(https://canvas.uw.edu/users/3264551/files/38442830/download?download_frd=1)
+
+
+***
+#### Question 2 - Distributions
+**a**\. Central Tendency: Briefly describe the following measures:
+
+* Mode
+* Median
+* Mean
+
+````
+
+````
+
+**b**\. Dispersion: Briefly describe the following measures:
+
+* Range
+* Variance
+* Standard deviation
+
+````
+
+````
+
+**c**\. Using the following sequence, create a plot of the normal distribution with a mean = 0 and standard deviation = 1.
+
+````{r echo=TRUE}
+x <- seq(-5,3, 0.01)
+````
+
+***
+#### Question 3 - Probabilities
+**a**\. Using the heart patient data in the 'processed.cleveland.data.txt' file: (link below)   
+(https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/heart-disease.names)  
+(https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data)  
+
+- separate the population into male and female groups  
+- calculate the mean and standard deviation for male cholesterol values  
+- create a histogram showing the distribution of male cholesterol values 
+
+````
+
+````
+
+**b**\. Using **rnorm()**, create a normal distribution and compare the histogram of the male cholesterol against the simulated normal distribution. Are they the same? *(can also use dnorm())*
+
+````
+
+````
+
+**c**\. Using **pnorm()**, determine the probability that a randomly chosen adult male has a cholesterol level of over 260.
+
+````
+
+````
+
+***
+#### Question 4 - Comparison
+**a**\. Load sample data file from: (http://www.openintro.org/stat/data/cdc.R)  
+*(use "source(file)" function to load external R data.)*
+
+````
+
+````
+
+**b**\. Create a histogram plot of the weight values:
+
+````
+
+````
+
+**c**\. Create a new data frame (*young*) from the cdc data file containing individuals between the ages of (18 to 30).
+
+````
+
+````
+
+**d**\. Use **sample()**, to collect 50 random sample values from the (young) data frame.
+
+````
+
+````
+
+**e**\. Describe the distribution of this sample?  
+How does it compare to the distribution of the population from which it was sampled from?
+
+````
+
+````
+
+**f**\. Using **sample()**, create three separate sample collections for (10, 50, 100) samples and plot the histogram of these three data sets. How are they different?  
+
+*using the original cdc data, not the filtered 'young' data*
+
+````
+
+````
+
+***
+#### Question 5 - Confidence Intervals  
+Using the sample data from: (http://www.openintro.org/stat/data/cdc.R)  
+*(use "source()" to load an external file)*
+
+
+**a**\. Create a data frame with the height values from the cdc sample data.
+
+````
+
+````
+
+**b**\. Create a sample data frame with 60 random samples of individual height values. Based on this sample data, what it the average height for these 60 individuals?
+
+````
+
+````
+
+**c**\. Calculate a confidence interval (upper, lower bounds) for the sample data.
+
+````
+
+````
+
+**d**\. Write a short loop to create (50) separate sample sets and calculate the confidence intervals for each set. How do the confidence intervals change in the 50 samples?
+
+
+````
+
+````
+
+***
+#### Question 6 - Inference  
+Use **"load()"** to import sample data file from: (http://www.openintro.org/stat/data/nc.RData) and complete the following:
+    
+**a**\. Review the attributes in this data set and determine which ones are categorical or numeric.
+
+````
+
+````
+
+**b**\. Create a side-by-side boxplot of habit and weight. What does the plot highlight about the relationship between these two variables?
+
+````
+
+````
+
+**c**\. Using the following statement to compare weight and habit. Is the difference between the mean of nonsmoker and that of smoker statistically significant?
+
+````
+by(nc$weight, nc$habit, mean)
+
+````
+
+**d**\. Use the following statement to calculate the inference measure between weight and habit.
+
+````
+inference(y = nc$weight, x = nc$habit, est = "mean", type = "ht", null = 0, alternative = "twosided", method = "theoretical")
+
+````
+
+**e**\. In the statement above, change the type argument to 'ci' to construct a confidence interval for the difference between the weights of babies born to smoking and non-smoking mothers.
+
+````
+
+````
+
+***
+#### Question 7 - Linear Regression  
+Load the sample data file from: (http://www.openintro.org/stat/data/mlb11.RData) and complete the following:
+
+**a**\. Use the **cor()** function to determine the numeric relationship between 'runs' and 'at_bats'.
+
+````
+
+````
+
+**b**\. Use the custom function **plot_ss()** *(included in RData file)* to create a plot for:
+
+````
+plot_ss(x = mlb11$at_bats, y = mlb11$runs, showSquares = TRUE)
+
+````
+
+**c**\. Review the mlb11 data set and select another variable that might be a good predictor of runs.
+
+````{r echo=TRUE}
+
+````
+
+**d**\. Create a scatterplot of the two variables and fit a linear model. Determine if there is a linear relationship?
+
+````{r echo=TRUE}
+
+````
+
+***
+#### Question 8 - Linear Regression  
+Use the built-in dataset (*faithful*) and complete the following:
+
+a) Create a linear model *lm()* and capture the standard residuals :
+
+````{r echo=TRUE}
+
+````
+
+b) Using *qqnorm()* create a normal probability plot with *qqline()* showing the comparison:
+
+````{r echo=TRUE}
+
+````
+
+***
+#### Question 9 - Estimates with Monte Carlo 
+
+Review and correct the following code to obtain an approximate value of Pi
+
+````{r echo=TRUE}
+runs <- 10
+#runif samples from a uniform distribution
+xs <- runif(runs,min=-0.5,max=0.5)
+ys <- runif(runs,min=-0.5,max=0.5)
+
+in.circle <- xs^2 + ys^2 <= 0.5^2
+mc.pi <- (sum(in.circle)/runs)*4
+
+plot(xs,ys,pch='.',col=ifelse(in.circle,"blue","grey")
+     ,xlab='',ylab='',asp=1,
+     main=paste("MC Approximation of Pi =",mc.pi))
+````
+
+***
+#### Question 10 (Optional) - Probability Puzzle 
+
+In a country in which people only want boys, every family continues to have children until they have a boy. If they have a girl, they have another child. If they have a boy, they have no more children. What is the proportion of boys to girls in the country? (Explain your answer)
+
+````
+
+
+````
+
+#### **End**

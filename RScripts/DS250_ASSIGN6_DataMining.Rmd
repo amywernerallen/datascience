@@ -1,0 +1,322 @@
+---
+title: "DS250 - Introduction to Data Science"
+author: "Amy Werner-Allen"
+date: "November 15, 2016"
+output:  html_document
+---
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+```
+```{r}
+rm( list = ls())  # Clear environment
+```
+
+### Assignment 6 - Data Mining
+
+This assignment introduces concepts and tools used in extracting information from large data sets. Data mining supports knowledge discovery through the process of identifying patterns, mapping and scoring, and finding associations to determine structure in a data set.
+
+#### The objectives of this assignment are:
+* Understand the knowledge discovery process
+* Apply decision trees and association rules
+* Understand time-series trend analysis
+* Apply text mining techniques for reconition and frequency analysis
+* Understand sentiment analysis
+* Understand network data structures and graph data systems
+
+***
+#### Question 1 - Association Rules -- Predict adult income 
+
+**a**\. Load survey sample data: Census Income dataset  
+(https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data)  
+(https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.names)  
+
+```{r echo=TRUE}
+# Load sample data
+# flag lines containing '?' as 'NA'
+
+survey = read.table(url("http://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"),
+              header=FALSE, sep=",",
+              na.strings =c("?"), 
+              strip.white = TRUE) 
+
+# remove lines containing 'NA'
+survey.complete = survey[complete.cases(survey),] 
+
+# Set column names
+colnames(survey.complete) <- c('age','workclass','fnlwgt','education','educationnum',
+   'maritalstatus','occupation','relationship','race','sex','capitalgain','capitalloss',
+   'hoursweek','nativecountry','salaryrange')
+```
+
+**b**\. Create category features
+
+* Age: (15, 25, 45, 65, 100) - ('Young', 'Middle-aged', 'Senior', 'Elder')  
+* Hours per Week: (0, 25, 40, 60, 168) - ('Part-time', 'Full-time', 'Over-time', 'Workaholic')  
+* Capital Gains: (<=0, median, 1e+06) - ("None", "Low", "High")  
+* Captial Loss:  (<=0, median, 1e+06) - ("None", "Low", "High")  
+
+```{r echo=TRUE}
+# Convert to Categories
+survey.complete$age <- ordered(cut(survey.complete$age, c(15, 25, 45, 65, 100)),
+                               labels = c('Young', 'Middle-aged', 'Senior', 'Old')) 
+
+survey.complete$hoursweek <- ordered(cut(survey.complete$hoursweek, c(0, 25, 40, 60, 168)),
+                               labels = c('Part-time', 'Full-time', 'Over-time', 'Workaholic')) 
+
+survey.complete$capitalgain <- ordered(cut(survey.complete$capitalgain,
+                               c(-Inf, 0, 
+                               median(survey.complete$capitalgain[survey.complete$capitalgain>0]),
+                               1e+06)),
+                               labels = c("None", "Low", "High"))
+
+survey.complete$capitalloss <- ordered(cut(survey.complete$capitalloss,
+                               c(-Inf, 0, 
+                               median(survey.complete$capitalloss[survey.complete$capitalloss >0]),
+                               1e+06)),
+                               labels = c("None", "Low", "High"))
+
+# Review results
+summary(survey.complete)
+head(survey.complete[,1],3)
+```
+
+Here we use the cut function to assign categorical variables to segments of the data, partitioned into various groups. 
+
+**c**\. Using 'arules', create an apriori association model from the census data
+
+```{r echo=TRUE}
+# detach(package:tm, unload=TRUE) # Need to detach (TM) library with conflicting inspect()
+library(arules)
+survey.transactions <- as(survey.complete[,c(-3,-5)], "transactions") 
+summary(survey.transactions)
+```
+
+**d**\. List the top (10) rules based on support:
+
+```{r echo=TRUE}
+rules = apriori(survey.transactions, parameter = list(supp=0.05, conf=0.95))
+top.support = sort(rules, decreasing = TRUE, na.last = NA, by = "support")
+inspect(head(top.support, 10))
+```
+
+**e**\. List the top (10) rules based on confidence:
+
+```{r echo=TRUE}
+top.confidence <- sort(rules, decreasing = TRUE, na.last = NA, by = "confidence")
+inspect(head(top.confidence, 10))
+```
+
+***
+#### Question 2 - Association Rules -- Identify related items in shopping cart checkout
+
+**a**\. Load internal basket sample data: Groceries
+
+```{r echo=TRUE}
+# Load sample data
+library(arules)
+library(arulesViz)
+data("Groceries")
+```
+
+**b**\. Calculate rules using apriori specifying support and confidence thresholds:
+
+```{r echo=TRUE}
+# Use apriori() function to evaluate rules
+rules <- apriori(Groceries, parameter = list(supp = 0.001, conf = 0.5))
+options(digits=2)
+inspect(rules[1:5])
+
+# Rules summary
+summary(rules)
+```
+
+**c**\. Inspect the top 5 rules by lift:
+
+```{r echo=TRUE}
+top.lift <- sort(rules, decreasing = TRUE, na.last = NA, by = "lift")
+inspect(head(top.lift, 10))
+```
+
+Top association is "instant food products, soda" and "hamburger meat".
+
+**d**\. Using ItemFrequencyPlot create a frequency plot of the rules
+
+```{r echo=TRUE}
+itemFrequencyPlot(Groceries,topN=25,type="absolute")
+```
+
+**e**\. Create a Graph plot of the top (10) rules by lift
+
+```{r echo=TRUE}
+rules<-sort(rules, decreasing=TRUE,by="lift")
+inspect(rules[1:5])
+plot(rules[1:10], method="graph", control=list(type="items"))
+```
+
+***
+#### Question 3 - Outliers
+Using internal IRIS data set, identify the outliers in (Sepal.Length Sepal.Width Petal.Length Petal.Width) values
+
+**a**\. Create Density Plot
+```{r echo=TRUE}
+# install.packages("DMwR")
+library(DMwR)
+data(iris)
+
+iris2 <- iris[,1:4]  # Pull Length, Width, Length
+lof.scores <- lofactor(iris2,k=3)
+plot(density(lof.scores))
+```
+
+**b**\. Print outliers
+```{r echo=TRUE}
+# Locate and print outliers
+outliers <- order(lof.scores, decreasing=T)[1:5]
+print(outliers)
+```
+These are the outliers for the IRIS data set.
+
+***
+#### Question 4 - Text mining -- Create a word-cloud graphic from the following:
+
+**a**\. Download text file for processing
+
+```{r echo=FALSE}
+# install.packages("tm")
+# install.packages("wordcloud")
+
+library(tm)
+library(wordcloud)
+
+```
+
+**b**\. Create a corpus from the text file
+
+```{r echo=TRUE}
+# Do we need to download this again?
+speech <- "http://www.sthda.com/sthda/RDoc/example-files/martin-luther-king-i-have-a-dream-speech.txt"
+modi_txt = readLines(speech)
+head(modi_txt)
+modi=Corpus(VectorSource(modi_txt))
+```
+
+**c**\. Clean text for processing
+
+* Strip whitespace
+* Change to lower case
+* Remove stop words
+* Apply stem word processing (Snowballc package)
+* Remove punctuation symbols
+* Review tm_map and remove common, but insignificant words
+
+```{r echo=FALSE}
+modi_data<-tm_map(modi,stripWhitespace)
+modi_data<-tm_map(modi_data,content_transformer(tolower))
+modi_data<-tm_map(modi_data,removeNumbers)
+modi_data<-tm_map(modi_data,removePunctuation)
+modi_data<-tm_map(modi_data,removeWords, stopwords("english"))
+```
+
+**d**\. Create wordcloud
+
+```{r echo=TRUE}
+wordcloud (modi_data, scale=c(5,0.5),
+max.words=100, random.order=FALSE, rot.per=0.35,
+use.r.layout=FALSE, colors=brewer.pal(8, "Dark2"))
+```
+
+***
+#### Question 5 - Entity Identification -- Create document term matrix from the following transcript: 
+(https://canvas.uw.edu/files/38879848/download?download_frd=1)
+
+**a**\. Load transcript file and separate words by speaker
+
+```{r echo=FALSE}
+# Be sure to download the file from above
+library(tm)
+library(zoo)
+library(SnowballC)
+require(ggplot2)
+
+#Load text from file
+Transcript <- readLines('C:/Temp/debate_2012_nyt.txt') # Please update to the local directory
+head(Transcript, 5)
+
+Transcript = data.frame(Words = Transcript, Speaker = NA, stringsAsFactors = FALSE)
+Transcript$Speaker[regexpr("LEHRER: ", Transcript$Words) != -1] <- 1
+Transcript$Speaker[regexpr("OBAMA: ", Transcript$Words) != -1] <- 2
+Transcript$Speaker[regexpr("ROMNEY: ", Transcript$Words) != -1] <- 3
+table(Transcript$Speaker)
+```
+
+**b**\. Remove moderator from transcript
+
+```{r echo=FALSE}
+# Remove moderator:
+Transcript$Speaker <- na.locf(Transcript$Speaker)
+Transcript <- Transcript[Transcript$Speaker != 1, ]
+myCorpus <- Corpus(DataframeSource(Transcript))
+```
+
+**c**\. Clean text for processing
+
+* Strip whitespace
+* Change to lower case
+* Remove stop words
+* Apply stem word processing (Snowballc package)
+* Remove punctuation symbols
+* Review tm_map and remove common, but insignificant words
+
+```{r echo=TRUE}
+myCorpus <- tm_map(myCorpus, tolower)  # Make lowercase
+myCorpus <- tm_map(myCorpus, removePunctuation, preserve_intra_word_dashes = FALSE)
+myCorpus <- tm_map(myCorpus, removeWords, stopwords("english"))  # Remove stopwords
+myCorpus <- tm_map(myCorpus, removeWords, c("lehrer", "obama", "romney"))
+myCorpus <- tm_map(myCorpus, stemDocument)  # Stem words
+myCorpus <- tm_map(myCorpus, PlainTextDocument)
+```
+
+
+**d**\. Using docTermMatrix, create a document matrix
+
+```{r echo=TRUE}
+docTermMatrix <- DocumentTermMatrix(myCorpus)
+head(docTermMatrix)
+```
+
+**e**\. Print table of word frequency by speaker
+
+```{r echo=FALSE}
+# Term frequency analyssis
+findFreqTerms(docTermMatrix, 2, 100)
+findFreqTerms(docTermMatrix, lowfreq=10)
+findAssocs(docTermMatrix, 'america', 0.30)
+
+docTermMatrix <- inspect(docTermMatrix)
+sort(colSums(docTermMatrix))
+table(colSums(docTermMatrix))
+
+termCountFrame <- data.frame(Term = colnames(docTermMatrix))
+termCountFrame$Leher  <- colSums(docTermMatrix[Transcript$Speaker == 1, ])
+termCountFrame$Obama  <- colSums(docTermMatrix[Transcript$Speaker == 2, ])
+termCountFrame$Romney <- colSums(docTermMatrix[Transcript$Speaker == 3, ])
+```
+
+**f**\. Create plot of word frequency (Romney / Obama)
+
+```{r echo = TRUE}
+zp1 <- ggplot(termCountFrame)
+zp1 <- zp1 + geom_text(aes(x = Obama, y = Romney, label = Term))
+zp1
+```
+
+***
+#### Question 6 (OPTIONAL) - Sentiment Analysis -- Twitter data capture 
+a. Create a Twitter developer account
+b. Activate your account keys
+c. Create Twitter client
+d. Capture topic stream
+e. Analyze term frequency
+
+
+#### **End**

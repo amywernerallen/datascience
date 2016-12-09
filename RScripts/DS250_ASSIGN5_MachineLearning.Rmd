@@ -1,0 +1,304 @@
+---
+title: "DS250 - Introduction to Data Science"
+author: "Amy Werner-Allen"
+date: "November 1, 2016"
+output:  html_document
+---
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+rm( list = ls())  # Clear environment
+```
+
+### Assignment 5 - Building Machine Learning Models
+
+This assignment will cover the basics of machine learning models including feature engineering, primary component analysis, and unsupervised learning models.
+
+#### The objectives of this assignment are:
+* Hands-on practive with dimensionality reduction using SVD, PCA
+* Multiple unsupervised models
+* Build a simple recommendation system using UBCF
+* Unsupervised prediction using decision trees
+
+***
+#### Question 1 - Machine Learning Concepts
+
+**a\. What is a 'confusion matrix' and what does it measure?**
+
+A confusion matrix shows the counts for the predicted versus actual classifications for output in a predictive algorithm. It shows the false / true negatives along with the false / true positives. In effect, it shows how well the predictive model did at classifications. 
+
+**b\. Explain what the terms precision and recall are. How do they relate to the ROC curve?**
+
+Precision is the number of positive predictions over the total number of predictions. In another way: it is the number of true positives over the total number of true positives and false positives. Recall is the number of true positives over the total number of positives (true positives and false negatives).
+
+**c\. Describe some of the steps in selecting a machine learning algorithm.**
+
+The first step of selecting a machine learning algorithm is determining whether a supervised or unsupervised algorithm is most appropriate. If test data can be used, then a supervised model would work. If test data is unavailable or the overarching goal is to discover unknown correlations in the data, then an unsupervised model would work.
+
+Once the type of model is selected, the data needs to be prepared and cleaned and appropriate features selected for the model. Then, after the model is run, the output can be validated using several methods. If we want to compare machine learning algorithms, we can use metrics like AIC or BIC to compare the fits of the models and choose the best one. 
+
+**d\. Describe some of the core activities in Feature Engineering**.
+
+Selecting features relies on strong domain knowledge. Activities in feature engineering include deciding which features are relevant to both the data in question and the hypothesis. Once some features are selected and created, they need to be implemented in a model. They can often be tweaked or altered to optimize the model. 
+
+***
+#### Question 2 - Feature Engineering
+
+Use the following matrix to complete the following:
+
+````{r ratingMatrix, echo=FALSE}
+ratings = c(3,5,5,5,1,1,5,2,5,1,1,5,3,5,1,5,4,2,4,3,4,2,1,4)
+rating_matrix = matrix(ratings, nrow=6)
+rownames(rating_matrix) = c("Homer","Marge","Bart","Lisa","Flanders","Me")
+colnames(rating_matrix) = c("Avengers","American Sniper","Les Miserable","Mad Max")
+# Print rating matrix
+rating_matrix
+````
+
+**a\. Using singular value decomposition, refactor the ratingMatrix (U\*D\*VT)**
+
+```{r svd, echo=TRUE}
+#install.packages("recommenderlab"")
+library(recommenderlab)
+m = svd(rating_matrix)
+print(m)
+```
+
+We have matrix d (diagonal), and square matrices u and v. Our rating matrix = U*d*VT.
+
+**b\. From the svd results above, estimate the variance of the first two variables**
+
+```{r svdVariance, echo=TRUE}
+sum(m$d)
+```
+The variance over all the variables. 
+
+````{r echo = TRUE}
+var = sum(m$d[1:2])
+var
+```
+The variance for just the first two variables. 
+
+***
+#### Question 3 - Principal Component Analysis
+
+**a\. Using the ratings_matrix from Q2, interpret the PCA analysis using the following:**
+
+```{r pca, echo=TRUE}
+pca = prcomp(rating_matrix, centers=TRUE)
+pca
+plot(pca, type = "l")
+```
+
+We can see here that the first two principal components cover the majority of the variance, while last two only add an incremental amount. 
+
+**b\. Create a (corrplot) correlation matrix from the following:**
+
+```{r pca_corr, echo=FALSE}
+library(corrplot)    #Correlation plot
+library(ggplot2)     #support scatterplot
+library(GPArotation) #supports rotation
+library(corrplot)
+
+nhl = as.data.frame(read.csv("http://textuploader.com/ae6t4/raw", header=FALSE))
+names(nhl) = c("rank","team","played","wins","losses","OTL","pts","ROW","HROW","RROW","ppc","gg",
+               "gag","five","PPP","PKP","shots","sag","sc1","tr1","lead1","lead2","wop","wosp",
+               "face")
+# Sort by Goals per Game
+nhl=nhl[order(nhl$gg),]
+M = cor(nhl[,7:25])
+corrplot(M, method="circle")
+```
+
+***
+#### Question 4 - Simple collaborative filter recommendations
+
+```{r jester, echo=TRUE}
+library(recommenderlab)
+data(Jester5k)
+hist(getRatings(normalize(Jester5k)), breaks=100)
+```
+
+**a\. Split sample data set (Jester5K) into Training and Test data sets.**
+
+```{r jesterSplit, echo=TRUE}
+# 80/20 split of the data for the train and test sets.
+e = evaluationScheme(Jester5k, method="split", train=0.8, given=15, goodRating=5)
+```
+
+_Creates an evaluationScheme object from a data set. The scheme can be a simple split into training
+and test data, k-fold cross-evaluation or using k independent bootstrap samples._
+
+**b\. Use Recommender() function to build a UBCF model on your training data:**
+
+```{r echo=TRUE}
+ubcf = Recommender(getData(e,"train"), "UBCF")
+ubcf
+```
+
+**c**\. Create user prediction model and evaluate the model performance
+
+```{r echo=TRUE}
+# Create user prediction model -- this will take a few moments
+user_pred = predict(ubcf, getData(e,"known"),type="ratings")
+P1 = calcPredictionAccuracy(user_pred, getData(e, "unknown"))
+```
+
+***
+#### Question 5 - Unsupervised Learning
+
+```{r echo=FALSE}
+library("NbClust")
+idf <- iris[, -5]
+head(idf)
+```
+
+**a\. Using the following, evaluate the best number of clusters (k) for this data set (IDF).**
+
+```{r echo=TRUE}
+best <- NbClust(idf, diss = NULL, distance = "euclidean", min.nc = 2, max.nc = 15, method = "complete", index = "alllong")
+```
+
+Optimal number of clusters is 3. 
+
+**b\. Review the following plot of the frequency by cluster (k):**
+
+```{r echo=TRUE}
+par(mfrow = c(1, 2))
+hist(best$Best.nc[1,], breaks = max(na.omit(best$Best.nc[1,])))
+barplot(table(best$Best.nc[1,]))
+```
+
+This plot shows that the majority of algorithms identified **3** as the optimal number of clusters for this data set. 
+
+**c**\. Perform K-means analysis and review the results using clusplot().
+
+```{r echo=TRUE}
+#install.packages("cluster")))
+library("cluster")
+results <- kmeans(idf[1:4], 3, iter.max = 1000, algorithm = "Hartigan-Wong")
+
+par(mfrow = c(1, 1))
+clusplot(idf[1:4], results$cluster, color=TRUE, shade=TRUE,labels=2, lines=1,main='Cluster Analysis for Iris Data Set')
+```
+
+***
+#### Question 6 - Titanic Survival Model
+
+```{r echo=TRUE}
+library(titanic)
+data(titanic_train)
+
+# Split data sets: Train / Test
+n = nrow(titanic_train)
+trainset = sample(1:n, size = round(0.7*n), replace=FALSE)
+
+train = titanic_train[trainset,]
+test = titanic_train[-trainset,]
+```
+
+Training set with ~70% of the data, the rest being test data. 
+
+**a\. Data preparation - convert labels to Factors:**
+
+Review missing data
+```{r echo=TRUE}
+sum(is.na(train$Age) == TRUE)
+sapply(train, function(df) { sum(is.na(df)==TRUE)/ length(df); })
+```
+
+####Convert data
+```{r echo=TRUE}
+train$Survived = factor(train$Survived)
+train$Pclass   = factor(train$Pclass)
+test$Survived = factor(test$Survived)
+test$Pclass   = factor(test$Pclass)
+
+# Convert to numeric
+train$Sex[train$Sex=="male"] <- "1"
+train$Sex[train$Sex=="female"] <- "2"
+test$Sex[test$Sex=="male"] <- "1"
+test$Sex[test$Sex=="female"] <- "2"
+
+# Convert to factors
+train$Sex <- factor(train$Sex)
+train$Embarked <- factor(train$Embarked)
+test$Sex <- factor(test$Sex)
+test$Embarked <- factor(test$Embarked)
+
+# Remove empty ("") factors
+train$Embarked[train$Embarked=='']=NA
+train$Embarked = droplevels(train$Embarked)
+str(train)
+```
+
+**b\. Data exploration - execute the following to visualize model attributes:**
+
+```{r echo=TRUE}
+# Visualize passenger survival
+barplot(table(train$Survived), main="Passenger Survival",  names= c("Perished", "Survived"))
+barplot(table(train$Pclass), main="Passenger Class",  names= c("first", "second", "third"))
+barplot(table(train$Sex), main="Passenger Gender")
+hist(train$Age, main="Passenger Age", xlab = "Age")
+```
+
+**c\. Predicting passenger survival - using Decision Trees model**
+
+```{r echo=TRUE}
+#install.packages('party')
+library('party')
+
+# Create Model
+train.ctree = ctree(Survived ~ Pclass + Sex + Age + SibSp + Fare + Parch + Embarked, data=train)
+
+# Plot results
+plot(train.ctree, main="Conditional inference tree of Titanic Dataset")
+```
+
+**d\. Evaluate model performance**
+
+```{r echo=TRUE}
+# install.packages('caret', repos='http://cran.rstudio.com/')
+library(caret)
+
+ctree.predict = predict(train.ctree, test)
+confusionMatrix(ctree.predict, test$Survived)
+```
+
+**e\. Use the following to plot the model performance (ROC)**
+
+```{r echo=FALSE}
+#install.packages("ROCR")
+require(ROCR)
+
+# Create probability matrix
+train.ctree.prob =  1- unlist(treeresponse(train.ctree, test), use.names=F)[seq(1,nrow(test)*2,2)]
+train.ctree.prob.rocr = prediction(train.ctree.prob, test$Survived)
+
+# Create performance matrix
+train.ctree.perf = performance(train.ctree.prob.rocr, "tpr","fpr")
+train.ctree.auc.perf =  performance(train.ctree.prob.rocr, measure = "auc", x.measure = "cutoff")
+
+# Plot ROC curve
+plot(train.ctree.perf, col=2,colorize=T, main=paste("AUC:", train.ctree.auc.perf@y.values))
+```
+
+***
+#### Question 7 (Optional) - Probability Problem
+
+There are two bowls of cookies:
+1) **Bowl 1** contains **30 vanilla** cookies and **10 chocolate cookies**.
+2) **Bowl 2** contains **20** of each
+
+**_You pull a vanilla cookie at random. What is the probability it came from Bowl 1?_**
+
+Bayes theorem:
+
+P(B1 | Vanilla) = P(Vanilla | B1) * P(B1) / P(Vanilla)
+* P(Vanilla | B1) = 30/40 = 3/4
+* P(B1) = 1/2
+* P(Vanilla) = (30+20)/(40+40) = 5/8
+
+So (3/4)*(1/2)*(8/5) = 3/5
+
+
+#### **End**

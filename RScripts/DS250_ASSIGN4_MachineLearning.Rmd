@@ -1,0 +1,302 @@
+---
+title: "DS250 - Introduction to Data Science"
+author: "Amy Werner-Allen"
+date: "November 1st, 2016"
+output:  html_document
+---
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+```
+```{r}
+rm( list = ls())  # Clear environment
+library(ggplot2)
+library(reshape2)
+library(GGally)
+library(boot)
+library(class)
+library(factoextra)
+```
+
+### Assignment 4 - Introduction to Machine Learning
+*Amy Werner-Allen | November 1st, 2016*
+
+This assignment introduces the core concepts and tools used for automated prediction using Machine Learning. The concepts covered in this assignment include supervised and un-supervised learning algorithms, feature analysis, dimensionalality reduction, primary component analysis, statistical validation, and results evalution using ROC plots.
+
+#### The objectives of this assignment are:
+* Understand the types of machine learning
+* Evaluate and prepare test and training data
+* Define and adjust model parameters
+* Evaluate model performance
+
+***
+#### Question 1 - Machine Learning
+**a\. Briefly describe three differences between Supervised and Unsupervised Machine Learning:**
+
+In **Supervised Learning** (SL), we already have a sense of what the output should look like and the relationship between the input and output, whereas in **Unsupervised Learning** (USL), this is not the case. In USL, there is no real definition of the *inputs*; rather, we are looking to find some underlying structure to the data. In SL, we use training data to effectively give the model clues as to how to map inputs to outputs; this does not happen in USL. In SL, we can use test data to validate whether the model generates consistent output; we cannot do this this in USL.
+
+
+**b\. What does the term 'dimensionality reduction' mean? Describe some of the activities involved.**
+
+In any given data set, there are a set of features, or **dimensions**, in the data. In order to use the data efficiently to produce accurate predictive models, it is often necessary to undergo **dimensionality reduction** in order to identify a selection of features that best correlate to the outputs of interest. This helps to reduce noise in the model, prevents overfitting, and decreases the processing time of the model. 
+
+One of the main methods for dimensionality reduction is Principal Component Analysis (**PCA**). This method looks for the features that contain the maximum variance of the data. 
+
+**c\. Describe some common approaches for identifying contributing variables:**
+
+There are many methods for identifying the variables that have the most significant contributions. Some common ones include **PCA** (Principal Component Analysis), baseline evaluation, missing values analysis, tree ensemble, low variance analysis, high correlation matrix, and backward and forward feature analysis. 
+
+***
+#### Question 2 - Machine Learning
+**a\. Describe 'overfitting' and some approaches to address it.**
+
+**Overfitting** describes the scenario when too much random noise and unimportant variation is taken into account in a model, leading to a model that is overly complex and has poor predictive power. As an example: consider the ice cream data set that is plotted in the next question. If we add in enough parameters, we can find a polynomial that will fit each point exactly. Yet that polynomial is not representative of the relationship between ice cream sold and temperature, and will do a poor job of predicting other data points. 
+
+To avoid overfitting, one should always use some techniques for validation, like cross-validation, regularization, or model comparison, to help understand the impact of adding additional parameters. 
+
+**b\. Describe 'underfitting' and some of the approaches to address it.**
+
+**Underfitting** describes the scenario when a model does not accurate capture the underlying trends of the data. So using the ice cream data set again, if we attempted to fit the model using a parabolic curve, this would not accurately capture the underlying trend in the data, and therefore would be an example of underfitting. The same methods listed above can be used to validate that the model is not being underfit. 
+
+**c\. What are 'training' and 'test' data sets? Why can't a training data set be used for model evaluation?**
+
+**Training** data is used in supervised learning algorithms to train the model as to how to map inputs to outputs. From there, the **test** data is used to validate the model's predictive power. Test data is inputted into the model without the output attached, and the model output is compared to the true output for validation. 
+
+***
+#### Question 3 - Linear Regression
+**a\. Load sample data set: Temperature and Ice Cream sales**
+
+````{r echo=TRUE}
+icecream <- data.frame(
+   temp=c(11.9, 14.2, 15.2, 16.4, 17.2, 18.1, 
+          18.5, 19.4, 22.1, 22.6, 23.4, 25.1),
+  units=c(185L, 215L, 332L, 325L, 408L, 421L, 
+          406L, 412L, 522L, 445L, 544L, 614L)
+  )
+````
+
+**b\. Create a plot units of ice cream sold by temperature:**
+
+````{r echo=TRUE}
+# plot(units ~ temp, data=icecream, bty="n", lwd=2,
+#      main="Ice cream Units Sold", col="#00526D", 
+#      xlab="Temperature (Celsius)", 
+#      ylab="Units sold")
+# axis(side = 1, col="grey")
+# axis(side = 2, col="grey")
+
+p = ggplot(icecream, aes(units, temp))
+p + geom_point() +labs(title ="Icecream Sales by Temp")
+````
+
+Looks linear!
+
+**c\. Create a regression model (*lm or glm*) for the icecream data set and print the model summary**
+
+````{r echo=TRUE}
+model.0 = lm(units~temp, data = icecream)
+summary(model.0)
+````
+
+Temperature is highly correlated with units of icecream sold. 
+
+**d\. Plot the icecream regression model including the confidence intervals:**
+
+````{r echo=TRUE}
+c = ggplot(icecream, aes(units, temp))
+c + stat_smooth(method=lm, fullrange=TRUE, alpha = 0.1) + geom_point() + labs(title ="Icecream Regression")
+````
+***
+#### Question 4 - Binomial Regression
+**a\. Load sample data set: (http://www.ats.ucla.edu/stat/data/binary.csv)**
+
+````{r echo=TRUE}
+students <- read.csv("http://www.ats.ucla.edu/stat/data/binary.csv")
+````
+
+**b\. Create a logistic regression model using (*glm*) for student admissions**
+
+````{r echo=TRUE}
+# ggcorr(students)
+model.1 = glm(admit~gre+gpa+rank, data= students, family=binomial)
+summary(model.1)
+````
+
+We can see from the output that rank has the highest correlation with admission, with gpa and gre having slight, yet still significant, positive correlations. 
+
+**c\. Plot the student regression model including confidence intervals:**
+
+````{r echo=TRUE}
+model1.diag = glm.diag(model.1)
+glm.diag.plots(model.1, model1.diag)
+````
+
+***
+#### Question 5 - Supervised Learning
+**a\. Using the following, classify two data sets using kNN (Nearest Neighbor):**
+
+````{r echo = TRUE}
+# Class A
+A1=c(0,0)
+A2=c(1,1)
+A3=c(2,2)
+A = c(A1, A2, A3)
+dim(A) = c(2,3)
+A = as.data.frame(t(A))
+A$type = "A"
+
+# Class B
+B1=c(6,6)
+B2=c(5.5,7)
+B3=c(6.5,5)
+B = c(B1, B2, B3)
+dim(B) = c(2,3)
+B = as.data.frame(t(B))
+B$type = "B"
+
+dataset = rbind(A, B)
+# Here we have created the total data set with points identified as A and B
+
+dataset$ind = sample(2, nrow(dataset), replace=TRUE, prob=c(0.67, 0.33)) 
+# We randomly choose to assign ~1/3 of the rows as training rows and ~2/3 of the rows as test rows
+
+dataset.training = dataset[dataset$ind==1,1:2] 
+dataset.training = dataset[dataset$ind==1,1:2] 
+dataset.test = dataset[dataset$ind==2,1:2] 
+dataset.trainLabels = dataset[dataset$ind==1, 3] 
+dataset.testLabels = dataset[dataset$ind==2, 3] 
+
+# Now we run the KNN using the training and test data
+data_predict = knn(train = dataset.training, test = dataset.test, cl = dataset.trainLabels, k=2)
+print(dataset.test[,1:2])
+print(data_predict)
+print(dataset.testLabels)
+````
+
+Compare data_predict to dataset.testLabels to see how accurately the model identified the test data. 
+
+**b\. From the model in part a, test the kNN model against a different test value:**
+
+> test=c(3.5, 3.5) # is this an A or B?
+
+````{r echo=TRUE}
+dataset.test=c(3.5, 3.5)
+dataset.training = dataset[,1:2] 
+dataset.trainLabels = dataset[, 3] 
+data_predict = knn(train = dataset.training, test = dataset.test, cl = dataset.trainLabels, k=2)
+print(data_predict)
+````
+
+
+**c**\. Create a scatter plot showing the A and B class objects and the test objects.
+
+````{r echo=TRUE}
+full_data = rbind(dataset[,1:3], dataset.test)
+full_data$type[7]=if(data_predict==2){"B"}else{"A"}
+
+p = ggplot(full_data, aes(V1, V2))
+p + geom_point(aes(colour = factor(type)))
+````
+
+***
+#### Question 6 - Cluster Analysis
+**a**\. Identify the number of clusters in the following data and plot the data points.
+
+````{r echo=TRUE}
+n = 1000
+g = 6
+set.seed(g)
+d <- data.frame(x = unlist(lapply(1:g, function(i) rnorm(n/g, runif(1)*i^2))),
+                y = unlist(lapply(1:g, function(i) rnorm(n/g, runif(1)*i^2))))
+
+plot(d, type = "p", col="blue", xlim=c(-5,30), ylim=c(-5,20),
+main="Initial Cluster Data", xlab="X", ylab="Y")
+````
+
+Based off of visualization, there appear to be either 4 or 5 clusters.
+
+**b\. Exploratory Data Analysis  - Create scatterplot showing cluster distribution.**
+
+````{r echo=TRUE}
+for(i in 1:dim(d)[1]){if(d$y[i]<4){d$class[i]=1}else{d$class[i]=2}}
+for(i in 1:dim(d)[1]){if(d$y[i]>10.5){d$class[i]=3}}
+for(i in 1:dim(d)[1]){if(d$x[i]>15){d$class[i]=4}}
+d$class = factor(d$class)
+p = ggplot(d, aes(x, y))
+p + geom_point(aes(color = factor(class)))
+````
+
+Plot showing 4 potential clusters.
+
+**c\. Cluster Analysis - Calculate the 'Within Groups Sum of Squares' to estimate optimal 'K'.**
+
+````{r echo=TRUE}
+wss = (nrow(d)-1)*sum(apply(d,2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(d,
+   centers=i)$withinss)
+plot(1:15, wss, type="b", xlab="Number of Clusters",
+  ylab="Within groups sum of squares") 
+````
+
+Optimal K is 5 clusters. 
+
+**d\. Model - Create K-Means model and display fit results.**
+
+````{r echo=TRUE}
+fit = kmeans(d[,1:2], 5) # 5 cluster solution
+aggregate(d[,1:2],by=list(fit$cluster),FUN=mean)
+d = data.frame(d, fit$cluster) 
+p = ggplot(d, aes(x, y))
+p + geom_point(aes(color = factor(fit.cluster)))
+````
+
+***
+#### Question 7 - Cluster Analysis
+**a\. Retrieve sample data from: (http://archive.ics.uci.edu/ml/machine-learning-databases/wine)**
+
+````{r echo=TRUE}
+wine.data <- read.csv("http://archive.ics.uci.edu/ml/machine-learning-databases/wine/wine.data")
+
+colnames(wine.data) <- c("Region", "Alcohol", "Malic", "Ash","Alca", "Mag", "Phenol","Flava", "NFP","PC", "Color", "Hue","ODComp", "Proline")
+````
+
+**b\. Cluster Analysis - Determine optimal number of clusters.**
+
+````{r echo=TRUE}
+# scale the data first:
+scaled.data = scale(wine.data[2:14])
+
+# Determine optimal number of clusters by looking for max:
+fviz_nbclust(scaled.data, kmeans, method = "gap_stat")
+
+# Also can run WSS (yields same results):
+# wss = (nrow(wine.data)-1)*sum(apply(wine.data,2,var))
+# for (i in 2:15) wss[i] <- sum(kmeans(wine.data,
+#    centers=i)$withinss)
+# plot(1:15, wss, type="b", xlab="Number of Clusters",
+#   ylab="Within groups sum of squares") 
+````
+
+Optimal number of clusters is 3. 
+
+**c\. Evaluate model fit results.**
+
+````{r echo=TRUE}
+km = kmeans(scaled.data, 3)
+wine.data$cluster3 = factor(kmeans(scaled.data, 3)$cluster)
+ggpairs(wine.data, columns=2:8, mapping = ggplot2::aes(color = cluster3), lower=list(continuous='points'), axisLabels='none', upper=list(continuous='blank'), title="k-means with 3 clusters")
+ggpairs(wine.data, columns=2:8, mapping = ggplot2::aes(color = Region), lower=list(continuous='points'), axisLabels='none', upper=list(continuous='blank'), title="actual Region clustering")
+
+ggpairs(wine.data, columns=9:14, mapping = ggplot2::aes(color = cluster3), lower=list(continuous='points'), axisLabels='none', upper=list(continuous='blank'), title="k-means with 3 clusters")
+ggpairs(wine.data, columns=9:14, mapping = ggplot2::aes(color = Region), lower=list(continuous='points'), axisLabels='none', upper=list(continuous='blank'), title="actual Region clustering")
+````
+
+Clusters look very similar between k-means and actual regional subdivisions. 
+
+***
+#### Question 8 (Optional) - Probability Problem
+The race track has **5** lanes. There are **25** horses and we need to find out the **3** fastest horses.
+What is the **minimum number of races** we need to conduct to determine the 3 fastest horses? (Explain your answer)
+
+(*NOTE: Assume the horses run the same speed in all races.*)  
+
+#### **End**
