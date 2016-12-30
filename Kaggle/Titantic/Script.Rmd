@@ -1,0 +1,22 @@
+---
+  title: 'Titantic Survival Exploration'
+  author: "Amy Werner-Allen"
+  output: html_document
+
+---
+  
+## Synopsis
+
+Import the training and testing set into R.
+
+```{r}
+setwd("~/Documents/Repositories/datascience/Kaggle/Titantic")
+titanic.train = read.csv("train.csv", header = TRUE, stringsAsFactors = FALSE)
+titanic.train$IsTrain = TRUE
+titanic.test = read.csv("test.csv", header = TRUE, stringsAsFactors = FALSE)
+titanic.test$IsTrain = FALSE
+
+titanic.test$Survived = NA
+titanic = rbind(titanic.train, titanic.test)
+```
+
