@@ -4,10 +4,19 @@
   output: html_document
 
 ---
-  
-## Synopsis
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+```
 
-Import the training and testing set into R.
+```{r echo=FALSE}
+library(reshape)
+library(stringr)
+library(ggplot2)
+```
+  
+### Titanic Survival Dataset
+
+First and foremost, we need to take a peek at the data. There are two datasets on the [Kaggle](https://www.kaggle.com/c/titanic) competition site: a training data set and a test data set. I chose to combine both to get a sense of what the data looks like. 
 
 ```{r}
 setwd("~/Documents/Repositories/datascience/Kaggle/Titantic")
@@ -20,3 +29,74 @@ titanic.test$Survived = NA
 titanic = rbind(titanic.train, titanic.test)
 ```
 
+So what do we have?
+
+```{r}
+str(titanic)
+```
+
+We have *1309* data points: 891 training data points with survived in (0, 1) and 418 test data points with unknown survival outcomes (NA).
+
+We have 13 variables: <br>
+
+* **Passenger ID**: a primary key to identify a passenger
+* **Survived**: indicator of surivival (will be NA when IsTrain is FALSE)
+* **Class**: the class designation (1st, 2nd, or 3rd)
+* **Name**: name of passenger
+* **Sex**: sex of passenger
+* **Age**: numeric age of passenger (decimal if less than 1 years old)
+* **Sibling & Spouse**: number of siblings or spouses also aboard
+* **Parent & Child**: number of parents or children also aboard
+* **Ticket**: the ticket number
+* **Fare**: how much the ticket cost
+* **Cabin**: the cabin number of the passenger
+* **Embarked**: the port of embarkment 
+* **IsTrain**: indicates whether data is from training or test dataset
+
+Now let's take a look at some key features to see exactly what we have.
+
+Starting with **age**, here is a quick distribution of the ages that we have for passengers:
+```{r}
+ggplot(titanic, aes(x=Age)) +
+  geom_histogram(colour="darkblue", fill="#6699FF") +
+  ggtitle("Age Distribution on Titanic") + 
+  scale_fill_gradient(low = "light blue", high = "orchid4", guide=FALSE) +
+  theme(panel.grid.minor = element_line(colour = "red", linetype = "dotted"), panel.background = element_rect(colour = "darkblue"))
+```
+
+About 20% of rows have no age information:
+```{r}
+sum(is.na(titanic$Age))
+```
+The same is not true for sex: all passengers have gender information filled out.
+
+What about **survival rates**? Looking globally, the chance of survival is around 40%:
+```{r}
+table(titanic$Survived)
+```
+
+We can also look at survival rates by different factors. Here we have survival rate by sex:
+```{r}
+ggplot(titanic, aes(Survived, fill=Sex)) + 
+  geom_bar(width = 0.8) +
+  scale_fill_manual(values=c("#CC3399", "#6699FF")) +
+  theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank()) +
+  scale_x_continuous(breaks=c(0,1), labels=c("No", "Yes"))
+```
+
+We can see that women had a higher chance of surviving than men.
+
+Here is survival rate by class:
+```{r}
+titanic$Pclass = as.factor(titanic$Pclass)
+
+ggplot(titanic, aes(Survived, fill=Pclass)) + 
+  geom_bar(width = 0.8) +
+  scale_fill_manual(values=c("#CC3399", "#6699FF", "#66CC33")) +
+  theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank()) +
+  scale_x_continuous(breaks=c(0,1), labels=c("No", "Yes"))
+```
+
+Being in first class gave you a better chance of survival, while being in third class meant you were much more likely *not* to survive. 
+
+How about age? Lets 
