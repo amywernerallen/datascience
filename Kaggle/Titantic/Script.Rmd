@@ -12,9 +12,10 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE)
 library(reshape)
 library(stringr)
 library(ggplot2)
+library(corrplot)
 ```
   
-### Titanic Survival Dataset
+### Data Exploration
 
 First and foremost, we need to take a peek at the data. There are two datasets on the [Kaggle](https://www.kaggle.com/c/titanic) competition site: a training data set and a test data set. I chose to combine both to get a sense of what the data looks like. 
 
@@ -99,4 +100,47 @@ ggplot(titanic, aes(Survived, fill=Pclass)) +
 
 Being in first class gave you a better chance of survival, while being in third class meant you were much more likely *not* to survive. 
 
-How about age? Lets 
+How about age? Lets create a factor for age based on numeric years.
+
+```{r}
+titanic$AgeF = "Infant"
+titanic$AgeF[titanic$Age >=2] <- "Child"
+titanic$AgeF[titanic$Age >=18] <- "Adult"
+titanic$AgeF[titanic$Age >=50] <- "Elderly"
+
+ggplot(titanic[!is.na(titanic$Age), ], aes(Survived, fill=AgeF)) + 
+  geom_bar(width = 0.8) +
+  scale_fill_manual(values=c("#CC3399", "#66CCCC", "#CC99FF", "#66CC33")) +
+  theme(panel.grid.minor=element_blank(),panel.grid.major=element_blank()) +
+  scale_x_continuous(breaks=c(0,1), labels=c("No", "Yes"))
+```
+
+We can see that infants had a higher chance of surviving, whereas the elderly had a lower chance. 
+
+What about the **fare**, how much passengers spent on their tickets?
+
+```{r}
+ggplot(titanic, aes(x=Fare)) +
+  geom_histogram(colour="darkblue", fill="#6699FF", binwidth=10) +
+  ggtitle("Fare Distribution on Titanic") + 
+  scale_fill_gradient(low = "light blue", high = "orchid4", guide=FALSE) +
+  theme(panel.grid.minor = element_line(colour = "red", linetype = "dotted"), panel.background = element_rect(colour = "darkblue"))
+```
+
+We can see that there is a long tail on this distribution, with some passengers spending more than $500 on their ticket. The average price of a ticket was $33.
+
+### Feature Selection
+
+Now that we have an idea about the data completeness and distributions, let's start looking at correlations between different data elements.
+
+```{r}
+titanic$Pclass = as.numeric(titanic$Pclass)
+titanic$SexN = 1
+titanic$SexN[titanic$Sex=="male"] = 0
+# 0 is male, 1 is female
+
+titanic_numeric = titanic[, sapply(titanic, is.numeric)]
+titanic_numeric = titanic_numeric[,-1]
+M = cor(titanic_numeric, use="pairwise.complete.obs")
+corrplot(M, method="shade")
+```
