@@ -13,6 +13,7 @@ library(reshape)
 library(stringr)
 library(ggplot2)
 library(corrplot)
+library(Amelia)
 ```
   
 ### Data Exploration
@@ -56,7 +57,13 @@ We have 13 variables: <br>
 
 Now let's take a look at some key features to see exactly what we have.
 
-Starting with **age**, here is a quick distribution of the ages that we have for passengers:
+We can get an overall picture of what data we are *missing* by using the missmap plot:
+
+```{r}
+missmap(titanic, y.labels = NULL, y.at = NULL, col = c("#CC3399", "#6699FF"), main = "Missing values vs observed")
+```
+
+We can easily see that **age** is missing quite a bit of values. We can start with age and take a quick distribution over all passengers:
 ```{r}
 ggplot(titanic, aes(x=Age)) +
   geom_histogram(colour="darkblue", fill="#6699FF") +
@@ -68,8 +75,9 @@ ggplot(titanic, aes(x=Age)) +
 About 20% of rows have no age information:
 ```{r}
 sum(is.na(titanic$Age))
+titanic$Age[is.na(titanic$Age)==TRUE] = mean(na.omit(titanic$Age))
 ```
-The same is not true for sex: all passengers have gender information filled out.
+In order to create a more complete data set, we can set these non-values equal to the average age on board the ship. 
 
 What about **survival rates**? Looking globally, the chance of survival is around 40%:
 ```{r}
@@ -129,9 +137,16 @@ ggplot(titanic, aes(x=Fare)) +
 
 We can see that there is a long tail on this distribution, with some passengers spending more than $500 on their ticket. The average price of a ticket was $33.
 
+There is only one passenger with no fare information; this person is in the third class, so we can assign them the average fare:
+
+```{r}
+sum(is.na(titanic$Fare))
+titanic$Fare[is.na(titanic$Fare)==TRUE] = mean(na.omit(titanic$Fare))
+```
+
 ### Feature Selection
 
-Now that we have an idea about the data completeness and distributions, let's start looking at correlations between different data elements.
+Now that we have an idea about the data completeness and distributions, let's start looking at **correlations** between different data elements.
 
 ```{r}
 titanic$Pclass = as.numeric(titanic$Pclass)
@@ -142,5 +157,70 @@ titanic$SexN[titanic$Sex=="male"] = 0
 titanic_numeric = titanic[, sapply(titanic, is.numeric)]
 titanic_numeric = titanic_numeric[,-1]
 M = cor(titanic_numeric, use="pairwise.complete.obs")
-corrplot(M, method="shade")
+corrplot(M, cl.pos="b", tl.pos="d", tl.col = "black", tl.cex=0.75, type="upper")
 ```
+
+We can see that survival is highly correlated with sex and class, and slightly with fare. We can also see that fare and class are highly correlated (so lower class passengers paid less money -- this makes sense). It also seems like higher class passengers were older, and those with siblings aboard also had parents or children.
+
+### Simple Regression
+
+Now, let's take a look at a simple **logistic regression** model. The factors we want to include are class, age, siblings, parents, fare, and sex.
+
+```{r}
+logitR = glm(Survived ~ Pclass + Age + SibSp + Parch + Fare + SexN, data = titanic_numeric, family = "binomial")
+summary(logitR)
+```
+
+We can see from the summary that sex has the lowest p-value, followed by class, age, and number of siblings. 
+
+```{r}
+anova(logitR, test="Chisq")
+```
+
+<br>
+Let's create a logistic model on the training set and use it on the test set to create some predictions. First, I divide up the data into a training set (75% of rows) and a test set (25% of rows). Then I create the model using the training set, and apply it to the test set:
+
+```{r}
+smp_size = floor(0.75 * 891)
+set.seed(123)
+train_ind = sample(891, size = smp_size)
+
+training = na.omit(titanic_numeric)
+training = training[train_ind, ]
+test = training[-train_ind, ]
+
+logit1 = glm(Survived ~ SexN + Pclass + Age + SibSp, data = training, family = "binomial")
+fitted.results = predict(logit1,newdata=test,type='response')
+fitted.results = ifelse(fitted.results > 0.5,1,0)
+
+misClasificError = mean(fitted.results != test$Survived)
+print(paste('Accuracy',1-misClasificError))
+```
+
+We can see that the accuracy of identifying the correct is roughly 75%. 
+
+### Random Forests
+
+Let's try a different method: a random forest. 
+
+```{r}
+library('party')
+fit = cforest(as.factor(Survived) ~ Pclass + SexN + Age + SibSp + Parch + Fare,
+                 data = training, 
+                 controls=cforest_unbiased(ntree=2000, mtry=3))
+Prediction = predict(fit, test, OOB=TRUE, type = "response")
+misClasificError = mean(Prediction != test$Survived)
+print(paste('Accuracy',1-misClasificError))
+```
+
+Accuracy on this method is higher, so let's go ahead and use this model for the real test data.
+
+```{r}
+training = titanic_numeric[1:891, ]
+test = titanic_numeric[892:1309, ]
+fit = cforest(as.factor(Survived) ~ Pclass + SexN + Age + SibSp + Parch + Fare,
+                 data = training, 
+                 controls=cforest_unbiased(ntree=2000, mtry=3))
+Prediction = predict(fit, test, OOB=TRUE, type = "response")
+```
+write.csv(Prediction, file = "titanic_submission.csv", row.names=FALSE)
