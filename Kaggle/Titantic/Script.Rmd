@@ -222,5 +222,10 @@ fit = cforest(as.factor(Survived) ~ Pclass + SexN + Age + SibSp + Parch + Fare,
                  data = training, 
                  controls=cforest_unbiased(ntree=2000, mtry=3))
 Prediction = predict(fit, test, OOB=TRUE, type = "response")
+PassengerID = seq(from=892, to=1309, by=1)
+Submission = as.data.frame(cbind(PassengerID, as.numeric(Prediction)-1))
+colnames(Submission)[2] = "Survived"
+
+write.csv(Submission, file = "titanic_submission.csv", row.names=FALSE)
+
 ```
-write.csv(Prediction, file = "titanic_submission.csv", row.names=FALSE)
