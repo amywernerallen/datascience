@@ -1,0 +1,229 @@
+---
+  title: 'The Counted'
+  author: "Amy Werner-Allen"
+  output: html_document
+
+---
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+```
+
+```{r echo=FALSE}
+library(reshape)
+library(stringr)
+library(ggplot2)
+library(corrplot)
+library(plyr)
+
+reorder_size <- function(x) {
+  factor(x, levels = names(sort(table(x))))
+}
+```
+  
+### Data Exploration and Cleanup
+
+First we load in the data:
+```{r}
+setwd("~/Documents/Repositories/datascience/Kaggle/Police")
+data15 = read.csv("2015.csv", header = TRUE)
+data16 = read.csv("2016.csv", header = TRUE)
+
+pdata = rbind(data15, data16)
+```
+
+There are **2,226** total data points: 1,146 from 2015 and 1,080 from 2016. 
+
+We have 14 variables: <br>
+
+* **ID**: primary key to identify row
+* **Name**: name of the victim
+* **Age**: age
+* **Gender**: gender (male/female)
+* **Race Ethnicity**: race and/or ethnicity
+* **Armed**: whether victim was armed and with what kind of weapon
+* **Date**: month, day, and year of incident
+* **Address**: street, city, and state
+* **Classification**: how the victim died
+* **Law Enforcement**: agency responsible for death
+
+Let's dive into each of these features to see what we have. 
+
+<br>
+
+
+#### Age
+
+A histogram to look at age distributions for the two years:
+
+```{r}
+pdata$age = as.numeric(as.character(pdata$age))
+ggplot(pdata, aes(x=age)) +
+  geom_histogram(data=subset(pdata,year == '2015'),fill = "red", alpha = 0.2) +
+  geom_histogram(data=subset(pdata,year == '2016'),fill = "blue", alpha = 0.2) +
+  ggtitle("Age Distribution of Deaths") + 
+  theme(panel.grid.minor = element_line(colour = "red", linetype = "dotted"), panel.background = element_rect(colour = "darkblue"))
+```
+
+Overall the distribution is fairly normal, with a long tail. 
+
+```{r}
+summary(pdata$age)
+```
+
+We can see that the average age is around 37 years old, with the min and max being 6 and 87 respectively. We also see that there is some missing data: 16 rows with NA as age. To provide more completeness, we can update these ages to be the average age of the population:
+
+```{r}
+pdata$age[is.na(pdata$age)==TRUE] = mean(na.omit(pdata$age))
+```
+<br>
+
+#### Gender
+
+A table to look at gender counts:
+
+```{r}
+table(pdata$gender)
+pdata$genderN = 1
+pdata$genderN[pdata$gender=="Female"] = 0
+```
+
+We can see that 5% of the victims were female, 95% were male, and only 1 victim fell into the category of "non-conforming". In order to look at correlations later on, I've created a numeric gender flag: 1 for male (and non-conforming) and 0 for female.  
+
+<br>
+
+ 
+#### Race and Ethnicity
+
+A bar chart of deaths by ethnicity and year: 
+
+```{r}
+ggplot(pdata, aes(reorder_size(raceethnicity), fill=factor(year))) +
+  geom_bar() +
+  xlab("Race & Ethnicity") +
+  guides(fill=guide_legend(title=NULL)) +
+  scale_fill_manual(values=c("#CC3399", "#6699FF")) +
+  coord_flip()
+```
+
+We can see that white is the predominant ethnicity, and that the counts were relatively equally split by year. 
+
+<br>
+
+ 
+#### Armed
+
+A bar chart of type of weapon by race & ethnicity:
+
+```{r}
+ggplot(pdata, aes(reorder_size(armed), fill=raceethnicity)) +
+  geom_bar() +
+  xlab("Type of Weapon") +
+  guides(fill=guide_legend(title=NULL)) +
+  scale_fill_brewer(palette="BrBG") +
+  coord_flip()
+```
+
+We can see that the majority of weapons used were firearms. In order to look at correlations later on, I've created a numeric armed flag: 1 for armed and 0 for unarmed. We can see that 83% of shootings were of victims that had some sort of weapon:
+
+```{r}
+pdata$armedN = 1
+pdata$armedN[pdata$armed=="No"] = 0
+table(pdata$armedN)
+```
+<br>
+
+#### Date
+
+A bar chart of deaths by month:
+
+```{r}
+pdata$month = factor(pdata$month,levels=month.name)
+ggplot(pdata, aes(x=month, fill=factor(year))) +
+  geom_bar() +
+  xlab("Counts by Month") +
+  theme_bw() +
+  scale_fill_manual(values=c("#CC3399", "#6699FF")) +
+  guides(fill=FALSE)
+```
+
+We can see spikes in March and July, but nothing drastic. All rows have month data. 
+
+<br>
+
+#### Location
+
+Since there are so many states, it's easier if we first map out which ones are in different regions of the U.S.: west, midwest, south, northeast.
+
+```{r}
+lookup = c(AK="West", AZ="West", CA="West", CO="West", HI="West", ID="West", MT="West", ND="West", NM="West", NV="West", OR="West", SD="West", UT="West", WA="West", WY="West", AL="South", AR="South", FL="South", GA="South", KY="South", LA="South", MO="South", MS="South", NC="South", OK="South", SC="South", TN="South", TX="South", WV="South", CT = "East", DC="East", DE="East", MA="East", MD="East", ME="East", NH="East", NJ="East", NY="East", PA="East", RI="East", VA="East", VT="East", IA="Midwest", IL="Midwest", IN="Midwest", KS="Midwest", MI="Midwest", MN="Midwest", NE="Midwest", OH="Midwest", WI="Midwest")
+
+pdata$Region = lookup[pdata$state]
+
+ggplot(pdata, aes(x=Region, fill=Region)) +
+  geom_bar() +
+  xlab("Counts by State") +
+  scale_fill_brewer(palette="PRGn") +
+  guides(fill=FALSE)
+```
+
+The bulk of the counts coming from the west are from CA, which has the greatest contribution of any of the states (371). The next two highest states are TX (204) and FL (141). The rest of the states have counts less than 100. 
+
+I'll create numeric flags for regions to be used later on:
+
+```{r}
+pdata$RegionN = 0
+pdata$RegionN[pdata$Region=="West"] = 1
+pdata$RegionN[pdata$Region=="MidWest"] = 2
+pdata$RegionN[pdata$Region=="South"] = 3
+pdata$RegionN[pdata$Region=="East"] = 4
+```
+<br>
+
+#### Classifaction
+
+A bar chart of classification of deaths:
+
+```{r}
+ggplot(pdata, aes(reorder_size(classification), fill=classification)) +
+  geom_bar() +
+  xlab("Counts by Classification") +
+  theme_bw() +
+  scale_fill_brewer(palette="BrBG") +
+  guides(fill=FALSE)
+```
+
+We can see that the majority of deaths (90%) were from gunshots. In order to investigate further later on, let's create an indicator for gunshot and non-gunshot deaths:
+
+```{r]}
+pdata$gunshotN = 0
+pdata$gunshotN[pdata$classification=="Gunshot"] = 1
+table(pdata$gunshotN)
+```
+<br>
+
+#### Law Enforcement Agencies
+
+There are a lot of them. Here are the main contenders:
+
+```{r}
+t = table(pdata$lawenforcementagency)
+t = as.data.frame(t)
+colnames(t) = c("Department", "Counts")
+head(arrange(t, desc(t$Counts)),10)
+```
+
+### Correlations
+
+Let's just take a quick look at what correlations we have, before diving into some regressions.
+
+```{r}
+pdata_num = pdata[, sapply(pdata, is.numeric)]
+pdata_num = pdata_num[,c(-1,-3,-4)]
+colnames(pdata_num) = c("Age", "Gender", "Armed", "Gunshot", "Region")
+M = cor(pdata_num, use="pairwise.complete.obs")
+corrplot(M, cl.pos="b", tl.pos="d", tl.col = "black", tl.cex=0.5, type="upper")
+```
+
+This isn't a terribly informative plot, we it is *very* clear that if a person was armed, they were likely to die of a gunshot. That being said, most of the data points in this data set had victims who were armed and died of a gunshot, so this is not particularly interesting.
+
+
