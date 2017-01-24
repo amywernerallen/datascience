@@ -1,0 +1,86 @@
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, fig.width = 8, fig.height = 8)
+
+library("viridisLite")
+library(highcharter)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+data("usgeojson")
+
+dshmstops <- data.frame(q = c(0, exp(1:5)/exp(5)),c = substring(viridis(5 + 1, option = "D"), 0, 7)) %>% 
+  list_parse2()
+
+deadly2015 <- read.csv("2015.csv")
+deadly2016 <- read.csv("2016.csv")
+
+deadly <- rbind(deadly2015, deadly2016)
+
+```
+
+
+
+### Mapping of the Deadly Killings{.tabset}
+
+```{r}
+
+by_states <- deadly %>% group_by(state) %>% summarise(Total = n()) 
+by_states$statename <- state.name[match(by_states$state, state.abb)]
+by_states <- na.omit(by_states)
+
+plot1 <- ( highchart() %>%
+  hc_title(text = "Number of Deadly Killings (2015-2016)") %>%
+  hc_add_series_map(usgeojson, by_states, name = "Number of Deadly Killings",
+                    value = "Total", joinBy = c("woename", "statename"))  %>% 
+  hc_colorAxis(stops = dshmstops) %>%
+  hc_credits(enabled = TRUE, text = "Source :The Guardian") %>%
+  hc_add_theme(hc_theme_google()) )
+
+
+by_states_male <- deadly[deadly$gender=="Male",] %>% group_by(state) %>% summarise(Total = n()) 
+by_states_male$statename <- state.name[match(by_states_male$state, state.abb)]
+by_states_male <- na.omit(by_states_male)
+
+plot2 <- ( highchart() %>%
+  hc_title(text = "Number of Deadly Killings - Male (2015-2016)") %>%
+  hc_add_series_map(usgeojson, by_states_male, name = "Number of Deadly Killings",
+                    value = "Total", joinBy = c("woename", "statename"))  %>% 
+  hc_colorAxis(stops = dshmstops) %>%
+  hc_credits(enabled = TRUE, text = "Source :The Guardian") %>%
+  hc_add_theme(hc_theme_google()) )
+
+
+by_states_female <- deadly[deadly$gender=="Female",] %>% group_by(state) %>% summarise(Total = n()) 
+by_states_female$statename <- state.name[match(by_states_female$state, state.abb)]
+by_states_female <- na.omit(by_states_female)
+
+plot3 <- (highchart() %>%
+  hc_title(text = "Number of Deadly Killings - Female (2015-2016)") %>%
+  hc_add_series_map(usgeojson, by_states_female, name = "Number of Deadly Killings",
+                    value = "Total", joinBy = c("woename", "statename"))  %>% 
+  hc_colorAxis(stops = dshmstops) %>%
+  hc_credits(enabled = TRUE, text = "Source :The Guardian") %>%
+  hc_add_theme(hc_theme_google()))
+
+
+```
+
+
+#### Total Deadly Killings
+```{r}
+plot1
+```
+
+
+#### Deadly Killing - Male
+```{r}
+plot2
+```
+
+
+#### Deadly Killing - Female
+```{r}
+plot3
+```
