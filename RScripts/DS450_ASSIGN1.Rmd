@@ -1,0 +1,132 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+```
+```{r}
+rm( list = ls())  # Clear environment
+library(GGally)
+library(ggplot2)
+library(rpart)
+library(rpart.plot)			
+library(pROC)	
+```
+
+## Assignment 1
+#### Amy Werner-Allen
+#### DS 450 | July 6th
+
+Use the wine.csv file that is provided. Build decision tree model to predict red vs white wine.
+
+***
+#### Build a Decision Tree Model
+
+**(1) Load in and explore the data**
+
+First we need to load in the data and take a peek at what the data looks like. 
+
+```{r, echo=T}
+setwd("~/Documents/UW/Assignments")
+wine = read.csv(file="wine.csv", header=TRUE)
+wine = as.data.frame(wine)
+wine$class = as.factor(wine$class)
+str(wine)
+```
+
+We have a 6,497 data points consisting of numeric values for various wine features, followed by a class variable that we have cast as a factor (category). We can visualize feature relationships by using a pairs plot to see if there are any obvious correlations between variables:
+
+```{r, fig.width = 10, fig.height = 8}
+ggpairs(wine, aes(colour = class, alpha = 0.3), upper="blank")
+```
+
+We can see from the density plots that certain features have more distinct distributions when broken down by class, e.g. total sulfur dioxide and volatile acidity. Aside from that, there are no two features that stand out as easily splitting the data into the two classes.
+
+**(2) Build a preliminary tree**
+
+First we build a basic classification tree using all the variables. We create a randomized training and test group. 
+
+```{r, echo=T}
+set.seed(1)
+rows = sample(dim(wine)[1], dim(wine)[1]/2, replace=FALSE)
+wine$group = 'Train'
+for(i in 1:length(rows)){wine$group[rows[i]]='Test'}
+
+fit = rpart(class ~ fixed_acidity + volatile_acidity + citric_acid + residual_sugar + free_sulfur_dioxide + total_sulfur_dioxide + ph, method="class", data=wine[wine$group=='Train',])
+
+rpart.plot(fit, box.palette = "Blues")
+```
+
+Each node shows three values:
+
+* The class value {0,1}
+* The probability of falling into that bucket [0,1]
+* The percent of the total population falling into that node 
+
+The first branch in the decision tree looks at the value for **total sulfur dioxide**. If the value is less than 68, there is a 89% chance that the wine is red (class = 1).
+
+```{r, echo=TRUE}
+sum(as.numeric(as.character(wine$class[wine$total_sulfur_dioxide<68 & wine$group =='Train'])))/length(wine$class[wine$total_sulfur_dioxide<68 & wine$group=='Train'])
+```
+
+We can continue down each subsequent branch to incorporate additional features. 
+
+**(3) Run prediction to determine correct classifications**
+
+We can use our model to predict the outcome of the original data without the classifier. Then we can determine the percentage of correct classification results.
+
+```{r, echo=TRUE}
+wine$pred_all[wine$group=='Test'] = as.numeric(as.character(predict(fit, wine[wine$group=='Test', -8], type="class")))
+sum(wine$class==wine$pred_all & wine$group=='Test')/dim(wine[wine$group=='Test',])[1]
+```
+
+Using all features, we can accurately classify red wines 95% of the time. 
+
+We can look at the variables of most importance using the summary function. The top three are total_sulfur_dioxide, volatile_acidity, and free_sulfur_dioxide. Next, we can build out a decision tree using just those features.
+
+**(4) Trim the tree**
+
+Let's use only three features to build the model:
+
+```{r, echo=T}
+fit2 = rpart(class ~ total_sulfur_dioxide+volatile_acidity+free_sulfur_dioxide, method="class", data=wine[wine$group=='Train',])
+
+wine$pred_trim[wine$group=='Test'] = as.numeric(as.character(predict(fit2, wine[wine$group=='Test', -8], type="class")))
+sum(wine$class==wine$pred_trim & wine$group=='Test')/dim(wine[wine$group=='Test',])[1]
+```
+
+With just these three, the accuracy has stayed the same at 95%.
+
+**(5) Calculate AUC values**
+
+AUC is calculated by determining the area under the ROC curve. The AUC value helps us determine whether we have overfit our data in the model. We can compare the two models from above to see which has the highest AUC.
+
+```{r, echo=T}
+ROC_all = roc(as.numeric(as.character(wine$class[wine$group=='Test'])), as.numeric(as.character(wine$pred_all[wine$group=='Test'])))
+ROC_trim = roc(as.numeric(as.character(wine$class[wine$group=='Test'])), as.numeric(as.character(wine$pred_trim[wine$group=='Test'])))
+
+auc(ROC_all)
+auc(ROC_trim)
+
+plot(ROC_all, col = "blue")
+par(new = TRUE)
+plot(ROC_trim, col = "green", xaxt = "n", yaxt = "n")
+```
+
+We can see that the AUC is slightly lower for the trimmed model. 
+
+***
+
+#### Summary
+
+1. What is the percentage of correct classification results (using all attributes)? 95.04%
+
+2. What is the percentage of correct classification results (using a subset of the attributes of your choosing)? 95.01%
+
+3. What is the AUC of your model (all features vs feature subset)? 93.52%
+
+4. What is the best AUC? 93.52% 
+
+5. What are the most important features? total_sulfur_dioxide, free_sulfur_dioxide, and volatile_acidity
